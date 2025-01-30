@@ -1,14 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>My Chrome Extension</title>
+  <title>LeetMode</title>
   <link rel="stylesheet" type="text/css" href="styles/popup.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 </head>
 <body>
   <div class="container">
-    <h1>My Chrome Extension</h1>
-    <p>This is my awesome extension!</p>
-    <button id="openNewTab">Open New Tab</button>
+    <div class="header">
+      <img src="icons/icon48.png" alt="LeetMode" class="logo">
+      <h1>LeetMode</h1>
+    </div>
+    
+    <div class="description">
+      <p>Schedule your LeetCode practice sessions or start an immediate focused session. During active sessions, all non-LeetCode sites will be blocked.</p>
+    </div>
+    
+    <button id="scheduleButton" class="primary-button">
+      <span class="material-icons">schedule</span>
+      Schedule Practice Times
+    </button>
+    
+    <button id="leetModeButton" class="primary-button">
+      <span class="material-icons">timer</span>
+      Go into LeetMode
+    </button>
+    
+    <div id="activeSession" class="session-info hidden">
+      <p>Time Remaining: <span id="timeRemaining">0:00</span></p>
+      <button id="stopBlocking" class="secondary-button">Stop Blocking</button>
+    </div>
+
+    <div class="footer">
+      <a href="https://github.com/hughgramel/leetMode" target="_blank" class="github-link">
+        <span class="material-icons">code</span>
+        View on GitHub
+      </a>
+    </div>
   </div>
   <script src="scripts/popup.js"></script>
 </body>

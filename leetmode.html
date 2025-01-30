@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>LeetMode Timer</title>
+  <link rel="stylesheet" type="text/css" href="styles/leetmode.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <button id="backButton" class="icon-button">
+        <span class="material-icons">arrow_back</span>
+      </button>
+      <h1>Set Practice Duration</h1>
+    </div>
+
+    <div class="timer-container">
+      <div class="time-picker">
+        <div class="time-unit">
+          <button class="increment">
+            <span class="material-icons">keyboard_arrow_up</span>
+          </button>
+          <input type="number" id="hours" min="0" max="24" value="0">
+          <button class="decrement">
+            <span class="material-icons">keyboard_arrow_down</span>
+          </button>
+          <label>Hours</label>
+        </div>
+
+        <div class="time-unit">
+          <button class="increment">
+            <span class="material-icons">keyboard_arrow_up</span>
+          </button>
+          <input type="number" id="minutes" min="0" max="59" value="0">
+          <button class="decrement">
+            <span class="material-icons">keyboard_arrow_down</span>
+          </button>
+          <label>Minutes</label>
+        </div>
+      </div>
+    </div>
+
+    <button id="startLeetMode" class="primary-button">
+      <span class="material-icons">lock_clock</span>
+      Lock In
+    </button>
+  </div>
+  <script src="scripts/leetmode.js"></script>
+</body>
+</html> 

@@ -1,9 +1,22 @@
 {
   "manifest_version": 3,
-  "name": "My Chrome Extension",
+  "name": "LeetMode",
   "version": "1.0",
-  "description": "A basic Chrome extension",
-  "permissions": ["tabs"],
+  "description": "Schedule your LeetCode practice sessions and stay focused",
+  "permissions": [
+    "tabs",
+    "storage",
+    "webNavigation",
+    "webRequest",
+    "declarativeNetRequest",
+    "alarms"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "scripts/background.js"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

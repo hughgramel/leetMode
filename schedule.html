@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>LeetMode Schedule</title>
+  <link rel="stylesheet" type="text/css" href="styles/schedule.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <button id="backButton" class="icon-button">
+        <span class="material-icons">arrow_back</span>
+      </button>
+      <h1>Schedule Practice Times</h1>
+    </div>
+
+    <div class="days-container">
+      <div class="day-circle" data-day="M">M</div>
+      <div class="day-circle" data-day="T">T</div>
+      <div class="day-circle" data-day="W">W</div>
+      <div class="day-circle" data-day="Th">Th</div>
+      <div class="day-circle" data-day="F">F</div>
+      <div class="day-circle" data-day="Sa">Sa</div>
+      <div class="day-circle" data-day="Su">Su</div>
+    </div>
+
+    <div class="time-settings hidden" id="timeSettings">
+      <div class="time-inputs-container">
+        <div class="time-group">
+          <label>Start Time</label>
+          <div class="time-input">
+            <input type="number" min="1" max="12" class="hour start-hour" value="9">
+            <span>:</span>
+            <input type="number" min="0" max="59" class="minute start-minute" value="00">
+            <button class="toggle-ampm start-ampm">AM</button>
+          </div>
+        </div>
+
+        <div class="time-group">
+          <label>End Time</label>
+          <div class="time-input">
+            <input type="number" min="1" max="12" class="hour end-hour" value="10">
+            <span>:</span>
+            <input type="number" min="0" max="59" class="minute end-minute" value="00">
+            <button class="toggle-ampm end-ampm">AM</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button id="saveSchedule" class="primary-button">Save Schedule</button>
+  </div>
+  <script src="scripts/schedule.js"></script>
+</body>
+</html> 
