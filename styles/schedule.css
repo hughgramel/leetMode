@@ -471,4 +471,26 @@ h1 {
 /* Hide remove button for the first time range */
 .time-ranges .time-range:first-child .remove-time {
   display: none;
+}
+
+.time-select {
+  padding: 8px;
+  border: 1px solid #E5E9F2;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+}
+
+.hour-select {
+  width: 70px;
+}
+
+.minute-select {
+  width: 60px;
+}
+
+.time-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
 } 

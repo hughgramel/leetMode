@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const scheduleDisplay = document.getElementById('scheduleDisplay');
 
   // Initialize schedule display
-  updateScheduleDisplay();
+  updateNextSession();
 
   // Check if LeetMode is active when popup opens
   chrome.runtime.sendMessage({ action: 'getBlockingStatus' }, (response) => {
@@ -53,12 +53,14 @@ document.addEventListener('DOMContentLoaded', function() {
     checkBlockingStatus();
   }
 
-  function updateScheduleDisplay() {
+  function updateNextSession() {
+    const scheduleDisplay = document.getElementById('scheduleDisplay');
     if (!scheduleDisplay) return;
-    
-    chrome.storage.sync.get('schedule', (data) => {
-      if (data.schedule && data.schedule.length > 0) {
-        const nextSession = findNextSession(data.schedule);
+
+    chrome.storage.sync.get('schedules', (data) => {
+      const schedules = data.schedules || [];
+      if (schedules.length > 0) {
+        const nextSession = findNextSession(schedules);
         if (nextSession) {
           scheduleDisplay.classList.remove('hidden');
           scheduleDisplay.innerHTML = formatNextSession(nextSession);
@@ -67,54 +69,68 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  function findNextSession(schedule) {
+  function findNextSession(schedules) {
     const now = new Date();
-    const today = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const currentDay = now.getDay(); // 0 = Sunday, 6 = Saturday
     const currentTime = now.getHours() * 60 + now.getMinutes();
     
-    const dayMap = { 'Su': 0, 'M': 1, 'T': 2, 'W': 3, 'Th': 4, 'F': 5, 'Sa': 6 };
-    
-    return schedule
-      .map(session => ({
-        ...session,
-        dayNum: dayMap[session.day],
-        startMinutes: convertTimeToMinutes(session.startTime)
-      }))
-      .sort((a, b) => {
-        const dayDiffA = (a.dayNum + 7 - today) % 7;
-        const dayDiffB = (b.dayNum + 7 - today) % 7;
-        if (dayDiffA === dayDiffB) {
-          return a.startMinutes - b.startMinutes;
-        }
-        return dayDiffA - dayDiffB;
-      })[0];
+    const dayMap = {
+      'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+      'thursday': 4, 'friday': 5, 'saturday': 6
+    };
+
+    let nextSession = null;
+    let minDiff = Infinity;
+
+    schedules.forEach(schedule => {
+      schedule.days.forEach(day => {
+        const scheduleDay = dayMap[day];
+        let dayDiff = scheduleDay - currentDay;
+        if (dayDiff < 0) dayDiff += 7;
+        
+        schedule.times.forEach(time => {
+          const sessionStart = convertToMinutes(time.start.time, time.start.period);
+          let totalMinutesDiff = dayDiff * 24 * 60 + (sessionStart - currentTime);
+          
+          if (totalMinutesDiff > 0 && totalMinutesDiff < minDiff) {
+            minDiff = totalMinutesDiff;
+            nextSession = {
+              ...schedule,
+              nextDay: day,
+              startTime: time.start,
+              endTime: time.end
+            };
+          }
+        });
+      });
+    });
+
+    return nextSession;
   }
 
-  function convertTimeToMinutes(time) {
-    const hour = parseInt(time.hour);
-    const minute = parseInt(time.minute);
-    const isPM = time.ampm === 'PM';
-    return (hour + (isPM && hour !== 12 ? 12 : 0)) * 60 + minute;
+  function convertToMinutes(time, period) {
+    const [hours, minutes] = time.split(':').map(Number);
+    let totalMinutes = hours * 60 + (minutes || 0);
+    
+    if (period === 'PM' && hours !== 12) totalMinutes += 12 * 60;
+    if (period === 'AM' && hours === 12) totalMinutes = minutes || 0;
+    
+    return totalMinutes;
   }
 
   function formatNextSession(session) {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const day = session.nextDay.charAt(0).toUpperCase() + session.nextDay.slice(1);
     return `
-      <div class="schedule-info">
-        <div class="next-session">
-          <span class="material-icons">event_next</span>
-          <span>Next session:</span>
-        </div>
-        <div class="session-time">
-          ${days[session.dayNum]} at 
-          ${formatTime(session.startTime)} - ${formatTime(session.endTime)}
+      <div class="next-session">
+        <span class="material-icons">event_next</span>
+        <div>
+          <div>Next session:</div>
+          <div class="session-time">
+            ${day} at ${session.startTime.time} ${session.startTime.period}
+          </div>
         </div>
       </div>
     `;
-  }
-
-  function formatTime(time) {
-    return `${time.hour}:${time.minute.toString().padStart(2, '0')} ${time.ampm}`;
   }
 
   function checkBlockingStatus() {

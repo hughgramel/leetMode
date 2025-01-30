@@ -1,3 +1,5 @@
+console.log("Hewwo");
+
 document.addEventListener('DOMContentLoaded', function() {
   const backButton = document.getElementById('backButton');
   const addScheduleButton = document.getElementById('addScheduleButton');
@@ -10,7 +12,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const timeButton = document.getElementById('timeButton');
   const daysDropdown = document.getElementById('daysDropdown');
   const timeDropdown = document.getElementById('timeDropdown');
-  const addTimeRange = document.getElementById('addTimeRange');
   const timeRanges = document.getElementById('timeRanges');
   const scheduleName = document.getElementById('scheduleName');
 
@@ -72,14 +73,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  addTimeRange.addEventListener('click', () => {
-    addNewTimeRange();
-  });
-
   // Functions
   function showModal() {
     scheduleModal.classList.remove('hidden');
     resetModal();
+    
+    // Set up time range listeners for the default time range
+    const timeRange = document.querySelector('.time-range');
+    if (timeRange) {
+      setupTimeRangeListeners(timeRange);
+    }
   }
 
   function hideModal() {
@@ -91,14 +94,17 @@ document.addEventListener('DOMContentLoaded', function() {
     scheduleName.value = '';
     document.querySelectorAll('.day-option input').forEach(checkbox => checkbox.checked = false);
     
-    // Reset time ranges
-    while (timeRanges.children.length > 1) {
-      timeRanges.removeChild(timeRanges.lastChild);
-    }
-    const firstTimeRange = timeRanges.querySelector('.time-range');
-    if (firstTimeRange) {
-      firstTimeRange.querySelectorAll('input').forEach(input => input.value = '');
-      firstTimeRange.querySelectorAll('.toggle-ampm').forEach(btn => {
+    // Reset time range
+    const timeRange = timeRanges.querySelector('.time-range');
+    if (timeRange) {
+      timeRange.querySelectorAll('select').forEach(select => {
+        if (select.classList.contains('hour-select')) {
+          select.value = '';
+        } else {
+          select.value = '00';
+        }
+      });
+      timeRange.querySelectorAll('.toggle-ampm').forEach(btn => {
         btn.dataset.period = 'AM';
         btn.textContent = 'AM';
       });
@@ -107,99 +113,26 @@ document.addEventListener('DOMContentLoaded', function() {
     updateDaysButtonText();
   }
 
-  function addNewTimeRange() {
-    const timeRange = document.createElement('div');
-    timeRange.className = 'time-range';
-    timeRange.innerHTML = `
-      <input type="text" class="time-input" placeholder="00:00" maxlength="5">
-      <button class="toggle-ampm" data-period="AM">AM</button>
-      <span>to</span>
-      <input type="text" class="time-input" placeholder="00:00" maxlength="5">
-      <button class="toggle-ampm" data-period="AM">AM</button>
-      <button class="remove-time">
-        <span class="material-icons">remove_circle_outline</span>
-      </button>
-    `;
-
-    // Add event listeners
-    setupTimeRangeListeners(timeRange);
-    timeRanges.appendChild(timeRange);
-  }
-
   function setupTimeRangeListeners(timeRange) {
-    // AM/PM toggle
+    // AM/PM toggle - direct click handler
     timeRange.querySelectorAll('.toggle-ampm').forEach(button => {
-      button.addEventListener('click', () => {
-        toggleAmPm(button);
-      });
-    });
-
-    // Add click listener to the AM/PM text itself
-    timeRange.querySelectorAll('.toggle-ampm').forEach(button => {
-      button.style.cursor = 'pointer'; // Ensure cursor shows it's clickable
-      button.addEventListener('click', (e) => {
+      button.addEventListener('click', function(e) {
         e.preventDefault();
-        toggleAmPm(button);
+        e.stopPropagation();
+        if (this.textContent.trim() === 'AM') {
+          this.textContent = 'PM';
+          this.dataset.period = 'PM';
+        } else {
+          this.textContent = 'AM';
+          this.dataset.period = 'AM';
+        }
+        validateTimeRange(timeRange);
       });
     });
 
-    function toggleAmPm(button) {
-      const currentPeriod = button.dataset.period;
-      const newPeriod = currentPeriod === 'AM' ? 'PM' : 'AM';
-      button.dataset.period = newPeriod;
-      button.textContent = newPeriod;
-    }
-
-    // Time input formatting
-    timeRange.querySelectorAll('.time-input').forEach(input => {
-      input.addEventListener('input', (e) => {
-        let value = e.target.value.replace(/\D/g, '');
-        
-        if (value.length > 0) {
-          let hours, minutes;
-          
-          if (value.length <= 2) {
-            // For 1-2 digits, treat as hours only
-            hours = parseInt(value);
-            if (hours <= 12) {
-              e.target.value = value;
-            }
-          } else {
-            // For 3-4 digits, split into hours and minutes
-            hours = parseInt(value.substring(0, 2));
-            minutes = parseInt(value.substring(2));
-            
-            if (hours <= 12 && minutes <= 59) {
-              e.target.value = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-            }
-          }
-        }
-      });
-
-      // Format when input loses focus
-      input.addEventListener('blur', (e) => {
-        let value = e.target.value.replace(/\D/g, '');
-        
-        if (value.length > 0) {
-          let hours, minutes;
-          
-          if (value.length <= 2) {
-            // For 1-2 digits, treat as hours and add :00
-            hours = parseInt(value);
-            if (hours <= 12) {
-              e.target.value = `${hours.toString().padStart(2, '0')}:00`;
-            }
-          } else {
-            // For 3+ digits, ensure proper HH:MM format
-            hours = parseInt(value.substring(0, 2));
-            minutes = parseInt(value.substring(2));
-            
-            if (hours <= 12 && minutes <= 59) {
-              e.target.value = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-            }
-          }
-        }
-      });
+    // Validate on select change
+    timeRange.querySelectorAll('select').forEach(select => {
+      select.addEventListener('change', () => validateTimeRange(timeRange));
     });
 
     // Remove button - only show for additional ranges
@@ -213,15 +146,55 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  function validateTimeRange(timeRange) {
+    const [startHour, startMinute, endHour, endMinute] = timeRange.querySelectorAll('select');
+    const [startAmPm, endAmPm] = timeRange.querySelectorAll('.toggle-ampm');
+    
+    if (startHour.value && startMinute.value && endHour.value && endMinute.value) {
+      // Check if times are identical
+      if (startHour.value === endHour.value && 
+          startMinute.value === endMinute.value && 
+          startAmPm.dataset.period === endAmPm.dataset.period) {
+        alert('Start and end times cannot be the same');
+        endHour.value = '';
+        endMinute.value = '00';
+        return;
+      }
+      
+      const start = convertToMinutes(
+        `${startHour.value}:${startMinute.value}`,
+        startAmPm.dataset.period
+      );
+      const end = convertToMinutes(
+        `${endHour.value}:${endMinute.value}`,
+        endAmPm.dataset.period
+      );
+      
+      if (end <= start) {
+        alert('End time must be after start time');
+        endHour.value = '';
+        endMinute.value = '00';
+      }
+    }
+  }
+
+  function convertToMinutes(time, period) {
+    const [hours, minutes] = time.split(':').map(Number);
+    let totalMinutes = hours * 60 + (minutes || 0);
+    
+    if (period === 'PM' && hours !== 12) totalMinutes += 12 * 60;
+    if (period === 'AM' && hours === 12) totalMinutes = minutes || 0;
+    
+    return totalMinutes;
+  }
+
   function updateDaysButtonText() {
-    const selectedDays = Array.from(document.querySelectorAll('.day-option input:checked:not(#everyday)'))
+    const selectedDays = Array.from(document.querySelectorAll('.day-option input:checked'))
       .map(checkbox => checkbox.id);
     
     const buttonText = daysButton.querySelector('.button-text');
     
-    if (document.getElementById('everyday').checked) {
-      buttonText.textContent = 'Every day';
-    } else if (selectedDays.length === 0) {
+    if (selectedDays.length === 0) {
       buttonText.textContent = 'Select days';
     } else if (selectedDays.length === 1) {
       // Show full day name for single selection
@@ -272,7 +245,7 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    const selectedDays = Array.from(document.querySelectorAll('.day-option input:checked:not(#everyday)'))
+    const selectedDays = Array.from(document.querySelectorAll('.day-option input:checked'))
       .map(checkbox => checkbox.id);
     if (selectedDays.length === 0) {
       alert('Please select at least one day');
@@ -281,23 +254,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const times = Array.from(timeRanges.querySelectorAll('.time-range'))
       .map(range => {
-        const [startInput, endInput] = range.querySelectorAll('.time-input');
+        const [startHour, startMinute, endHour, endMinute] = range.querySelectorAll('select');
         const [startAmPm, endAmPm] = range.querySelectorAll('.toggle-ampm');
+        
         return {
           start: {
-            time: startInput.value,
+            time: `${startHour.value}:${startMinute.value}`,
             period: startAmPm.dataset.period
           },
           end: {
-            time: endInput.value,
+            time: `${endHour.value}:${endMinute.value}`,
             period: endAmPm.dataset.period
           }
         };
       })
-      .filter(time => time.start.time && time.end.time);
+      .filter(time => time.start.time.includes(':') && time.end.time.includes(':'));
 
     if (times.length === 0) {
-      alert('Please add at least one valid time range');
+      alert('Please select valid start and end times');
       return;
     }
 
@@ -366,7 +340,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const endTime = `${formatTime(time.end.time)} ${time.end.period}`;
       return `${startTime} - ${endTime}`;
     }).join(', ');
-    return `${days} · ${times}`;
+    return `${days} - ${times}`;
   }
 
   function deleteSchedule(id) {
@@ -389,47 +363,4 @@ document.addEventListener('DOMContentLoaded', function() {
   // Remove all day option and simplify time selection
   document.querySelectorAll('.time-option').forEach(option => option.remove());
   timeRanges.classList.remove('hidden');
-
-  // Update validation
-  function validateTimeRange(event) {
-    const timeRange = event.target.closest('.time-range');
-    const [startInput, endInput] = timeRange.querySelectorAll('.time-input');
-    
-    if (startInput.value && endInput.value) {
-      const start = parseInt(startInput.value.replace(':', ''));
-      const end = parseInt(endInput.value.replace(':', ''));
-      
-      if (end <= start) {
-        alert('End time must be after start time');
-        event.target.value = '';
-      }
-    }
-  }
-
-  // Add this after your existing day checkbox event listeners
-  const everydayCheckbox = document.getElementById('everyday');
-  const dayCheckboxes = document.querySelectorAll('.day-option input[type="checkbox"]:not(#everyday)');
-
-  everydayCheckbox.addEventListener('change', (e) => {
-    // Check/uncheck all other day checkboxes
-    dayCheckboxes.forEach(checkbox => {
-      checkbox.checked = e.target.checked;
-    });
-    updateDaysButtonText();
-  });
-
-  // Update individual day checkbox behavior
-  dayCheckboxes.forEach(checkbox => {
-    checkbox.addEventListener('change', () => {
-      // If any individual day is unchecked, uncheck "Every day"
-      if (!checkbox.checked) {
-        everydayCheckbox.checked = false;
-      }
-      // If all days are checked, check "Every day"
-      else if (Array.from(dayCheckboxes).every(cb => cb.checked)) {
-        everydayCheckbox.checked = true;
-      }
-      updateDaysButtonText();
-    });
-  });
 }); 
