@@ -11,44 +11,74 @@
       <button id="backButton" class="icon-button">
         <span class="material-icons">arrow_back</span>
       </button>
-      <h1>Schedule Practice Times</h1>
+      <h1>Schedules</h1>
+      <button id="addScheduleButton" class="add-button">
+        <span class="material-icons">add</span>
+      </button>
     </div>
 
-    <div class="days-container">
-      <div class="day-circle" data-day="M">M</div>
-      <div class="day-circle" data-day="T">T</div>
-      <div class="day-circle" data-day="W">W</div>
-      <div class="day-circle" data-day="Th">Th</div>
-      <div class="day-circle" data-day="F">F</div>
-      <div class="day-circle" data-day="Sa">Sa</div>
-      <div class="day-circle" data-day="Su">Su</div>
+    <div id="schedulesList" class="schedules-list">
+      <!-- Schedules will be inserted here -->
     </div>
 
-    <div class="time-settings hidden" id="timeSettings">
-      <div class="time-inputs-container">
-        <div class="time-group">
-          <label>Start Time</label>
-          <div class="time-input">
-            <input type="number" min="1" max="12" class="hour start-hour" value="9">
-            <span>:</span>
-            <input type="number" min="0" max="59" class="minute start-minute" value="00">
-            <button class="toggle-ampm start-ampm">AM</button>
+    <!-- Add Schedule Modal -->
+    <div id="scheduleModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Add Schedule</h2>
+          <button class="close-button">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="input-group">
+            <input type="text" id="scheduleName" placeholder="Schedule name" class="schedule-name-input">
+          </div>
+
+          <div class="schedule-options">
+            <button id="daysButton" class="option-button">
+              <span class="material-icons">calendar_today</span>
+              <span class="button-text">Select days</span>
+              <span class="material-icons">expand_more</span>
+            </button>
+
+            <div id="daysDropdown" class="dropdown hidden">
+              <div class="day-option">
+                <input type="checkbox" id="monday" value="monday">
+                <label for="monday">Monday</label>
+              </div>
+              <div class="day-option">
+                <input type="checkbox" id="tuesday" value="tuesday">
+                <label for="tuesday">Tuesday</label>
+              </div>
+              <!-- ... other days ... -->
+            </div>
+
+            <div id="timeRanges" class="time-ranges">
+              <div class="time-range">
+                <input type="text" class="time-input" placeholder="00:00" maxlength="5" pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]">
+                <span>to</span>
+                <input type="text" class="time-input" placeholder="00:00" maxlength="5" pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]">
+                <button class="remove-time">
+                  <span class="material-icons">remove_circle_outline</span>
+                </button>
+              </div>
+            </div>
+
+            <button id="addTimeRange" class="add-time-button">
+              <span class="material-icons">add</span>
+              Add time
+            </button>
           </div>
         </div>
 
-        <div class="time-group">
-          <label>End Time</label>
-          <div class="time-input">
-            <input type="number" min="1" max="12" class="hour end-hour" value="10">
-            <span>:</span>
-            <input type="number" min="0" max="59" class="minute end-minute" value="00">
-            <button class="toggle-ampm end-ampm">AM</button>
-          </div>
+        <div class="modal-footer">
+          <button id="cancelSchedule" class="secondary-button">Cancel</button>
+          <button id="saveSchedule" class="primary-button">Save Schedule</button>
         </div>
       </div>
     </div>
-
-    <button id="saveSchedule" class="primary-button">Save Schedule</button>
   </div>
   <script src="scripts/schedule.js"></script>
 </body>
