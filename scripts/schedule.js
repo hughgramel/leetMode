@@ -51,14 +51,17 @@ document.addEventListener('DOMContentLoaded', function() {
   cancelButton.addEventListener('click', hideModal);
   saveButton.addEventListener('click', saveSchedule);
 
-  daysButton.addEventListener('click', () => {
+  // Toggle days dropdown
+  daysButton.addEventListener('click', (e) => {
+    e.stopPropagation();
     daysDropdown.classList.toggle('hidden');
-    timeDropdown.classList.add('hidden');
   });
 
-  timeButton.addEventListener('click', () => {
-    timeDropdown.classList.toggle('hidden');
-    daysDropdown.classList.add('hidden');
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!daysButton.contains(e.target) && !daysDropdown.contains(e.target)) {
+      daysDropdown.classList.add('hidden');
+    }
   });
 
   // Time type radio buttons
@@ -87,17 +90,20 @@ document.addEventListener('DOMContentLoaded', function() {
   function resetModal() {
     scheduleName.value = '';
     document.querySelectorAll('.day-option input').forEach(checkbox => checkbox.checked = false);
-    document.getElementById('allDay').checked = true;
-    document.getElementById('customTime').checked = false;
-    timeRanges.classList.add('hidden');
+    
+    // Reset time ranges
     while (timeRanges.children.length > 1) {
       timeRanges.removeChild(timeRanges.lastChild);
     }
     const firstTimeRange = timeRanges.querySelector('.time-range');
     if (firstTimeRange) {
       firstTimeRange.querySelectorAll('input').forEach(input => input.value = '');
+      firstTimeRange.querySelectorAll('.toggle-ampm').forEach(btn => {
+        btn.dataset.period = 'AM';
+        btn.textContent = 'AM';
+      });
     }
-    updateTimeButtonText();
+    
     updateDaysButtonText();
   }
 
@@ -105,56 +111,130 @@ document.addEventListener('DOMContentLoaded', function() {
     const timeRange = document.createElement('div');
     timeRange.className = 'time-range';
     timeRange.innerHTML = `
-      <input type="text" class="time-input" placeholder="00:00" maxlength="5" pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]">
+      <input type="text" class="time-input" placeholder="00:00" maxlength="5">
+      <button class="toggle-ampm" data-period="AM">AM</button>
       <span>to</span>
-      <input type="text" class="time-input" placeholder="00:00" maxlength="5" pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]">
+      <input type="text" class="time-input" placeholder="00:00" maxlength="5">
+      <button class="toggle-ampm" data-period="AM">AM</button>
       <button class="remove-time">
         <span class="material-icons">remove_circle_outline</span>
       </button>
     `;
 
-    timeRange.querySelector('.remove-time').addEventListener('click', () => {
-      timeRange.remove();
-      updateTimeButtonText();
+    // Add event listeners
+    setupTimeRangeListeners(timeRange);
+    timeRanges.appendChild(timeRange);
+  }
+
+  function setupTimeRangeListeners(timeRange) {
+    // AM/PM toggle
+    timeRange.querySelectorAll('.toggle-ampm').forEach(button => {
+      button.addEventListener('click', () => {
+        toggleAmPm(button);
+      });
     });
 
-    timeRange.querySelectorAll('input').forEach(input => {
-      input.addEventListener('input', (e) => {
-        formatTimeInput(e.target);
+    // Add click listener to the AM/PM text itself
+    timeRange.querySelectorAll('.toggle-ampm').forEach(button => {
+      button.style.cursor = 'pointer'; // Ensure cursor shows it's clickable
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleAmPm(button);
       });
-      
+    });
+
+    function toggleAmPm(button) {
+      const currentPeriod = button.dataset.period;
+      const newPeriod = currentPeriod === 'AM' ? 'PM' : 'AM';
+      button.dataset.period = newPeriod;
+      button.textContent = newPeriod;
+    }
+
+    // Time input formatting
+    timeRange.querySelectorAll('.time-input').forEach(input => {
+      input.addEventListener('input', (e) => {
+        let value = e.target.value.replace(/\D/g, '');
+        
+        if (value.length > 0) {
+          let hours, minutes;
+          
+          if (value.length <= 2) {
+            // For 1-2 digits, treat as hours only
+            hours = parseInt(value);
+            if (hours <= 12) {
+              e.target.value = value;
+            }
+          } else {
+            // For 3-4 digits, split into hours and minutes
+            hours = parseInt(value.substring(0, 2));
+            minutes = parseInt(value.substring(2));
+            
+            if (hours <= 12 && minutes <= 59) {
+              e.target.value = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            }
+          }
+        }
+      });
+
+      // Format when input loses focus
       input.addEventListener('blur', (e) => {
-        const value = e.target.value.replace(/\D/g, '');
-        if (value.length === 3) {
-          e.target.value = `0${value.substring(0, 1)}:${value.substring(1)}`;
+        let value = e.target.value.replace(/\D/g, '');
+        
+        if (value.length > 0) {
+          let hours, minutes;
+          
+          if (value.length <= 2) {
+            // For 1-2 digits, treat as hours and add :00
+            hours = parseInt(value);
+            if (hours <= 12) {
+              e.target.value = `${hours.toString().padStart(2, '0')}:00`;
+            }
+          } else {
+            // For 3+ digits, ensure proper HH:MM format
+            hours = parseInt(value.substring(0, 2));
+            minutes = parseInt(value.substring(2));
+            
+            if (hours <= 12 && minutes <= 59) {
+              e.target.value = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            }
+          }
         }
       });
     });
 
-    timeRanges.appendChild(timeRange);
-  }
-
-  function formatTimeInput(input) {
-    let value = input.value.replace(/\D/g, '');
-    
-    if (value.length >= 4) {
-      const hours = parseInt(value.substring(0, 2));
-      const minutes = parseInt(value.substring(2, 4));
-      
-      if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
-        input.value = `${value.substring(0, 2)}:${value.substring(2, 4)}`;
-      } else {
-        input.value = '';
-      }
+    // Remove button - only show for additional ranges
+    const removeButton = timeRange.querySelector('.remove-time');
+    if (removeButton && timeRange === timeRange.parentElement.firstElementChild) {
+      removeButton.style.display = 'none';
+    } else if (removeButton) {
+      removeButton.addEventListener('click', () => {
+        timeRange.remove();
+      });
     }
   }
 
   function updateDaysButtonText() {
-    const selectedDays = Array.from(document.querySelectorAll('.day-option input:checked'))
-      .map(checkbox => checkbox.id.charAt(0).toUpperCase() + checkbox.id.slice(1, 3));
+    const selectedDays = Array.from(document.querySelectorAll('.day-option input:checked:not(#everyday)'))
+      .map(checkbox => checkbox.id);
     
-    daysButton.querySelector('.button-text').textContent = 
-      selectedDays.length ? selectedDays.join(', ') : 'Select days';
+    const buttonText = daysButton.querySelector('.button-text');
+    
+    if (document.getElementById('everyday').checked) {
+      buttonText.textContent = 'Every day';
+    } else if (selectedDays.length === 0) {
+      buttonText.textContent = 'Select days';
+    } else if (selectedDays.length === 1) {
+      // Show full day name for single selection
+      buttonText.textContent = selectedDays[0].charAt(0).toUpperCase() + selectedDays[0].slice(1);
+    } else {
+      // Show abbreviated names for multiple selections
+      const dayAbbrev = selectedDays.map(day => {
+        const firstChar = day.charAt(0).toUpperCase();
+        const restChars = day.slice(1, 3);
+        return firstChar + restChars;
+      });
+      buttonText.textContent = dayAbbrev.join(', ');
+    }
   }
 
   function updateTimeButtonText() {
@@ -180,11 +260,9 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function formatTime(time) {
+    if (!time.includes(':')) return time;
     const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
+    return `${parseInt(hours)}:${minutes}`;
   }
 
   function saveSchedule() {
@@ -194,41 +272,40 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    const selectedDays = Array.from(document.querySelectorAll('.day-option input:checked'))
+    const selectedDays = Array.from(document.querySelectorAll('.day-option input:checked:not(#everyday)'))
       .map(checkbox => checkbox.id);
     if (selectedDays.length === 0) {
       alert('Please select at least one day');
       return;
     }
 
-    const timeType = document.querySelector('input[name="timeType"]:checked').value;
-    let times = [];
-    
-    if (timeType === 'allDay') {
-      times = [{ start: '00:00', end: '23:59' }];
-    } else {
-      times = Array.from(timeRanges.querySelectorAll('.time-range'))
-        .map(range => {
-          const [start, end] = range.querySelectorAll('input');
-          return {
-            start: start.value,
-            end: end.value
-          };
-        })
-        .filter(time => time.start && time.end);
-      
-      if (times.length === 0) {
-        alert('Please add at least one valid time range');
-        return;
-      }
+    const times = Array.from(timeRanges.querySelectorAll('.time-range'))
+      .map(range => {
+        const [startInput, endInput] = range.querySelectorAll('.time-input');
+        const [startAmPm, endAmPm] = range.querySelectorAll('.toggle-ampm');
+        return {
+          start: {
+            time: startInput.value,
+            period: startAmPm.dataset.period
+          },
+          end: {
+            time: endInput.value,
+            period: endAmPm.dataset.period
+          }
+        };
+      })
+      .filter(time => time.start.time && time.end.time);
+
+    if (times.length === 0) {
+      alert('Please add at least one valid time range');
+      return;
     }
 
     const newSchedule = {
       id: Date.now().toString(),
       name,
       days: selectedDays,
-      times,
-      timeType
+      times
     };
 
     currentSchedules.push(newSchedule);
@@ -284,9 +361,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function formatScheduleTime(schedule) {
     const days = schedule.days.map(day => day.charAt(0).toUpperCase() + day.slice(1, 3)).join(', ');
-    const times = schedule.timeType === 'allDay' 
-      ? 'All day' 
-      : schedule.times.map(time => `${formatTime(time.start)} - ${formatTime(time.end)}`).join(', ');
+    const times = schedule.times.map(time => {
+      const startTime = `${formatTime(time.start.time)} ${time.start.period}`;
+      const endTime = `${formatTime(time.end.time)} ${time.end.period}`;
+      return `${startTime} - ${endTime}`;
+    }).join(', ');
     return `${days} · ${times}`;
   }
 
@@ -326,4 +405,31 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   }
+
+  // Add this after your existing day checkbox event listeners
+  const everydayCheckbox = document.getElementById('everyday');
+  const dayCheckboxes = document.querySelectorAll('.day-option input[type="checkbox"]:not(#everyday)');
+
+  everydayCheckbox.addEventListener('change', (e) => {
+    // Check/uncheck all other day checkboxes
+    dayCheckboxes.forEach(checkbox => {
+      checkbox.checked = e.target.checked;
+    });
+    updateDaysButtonText();
+  });
+
+  // Update individual day checkbox behavior
+  dayCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      // If any individual day is unchecked, uncheck "Every day"
+      if (!checkbox.checked) {
+        everydayCheckbox.checked = false;
+      }
+      // If all days are checked, check "Every day"
+      else if (Array.from(dayCheckboxes).every(cb => cb.checked)) {
+        everydayCheckbox.checked = true;
+      }
+      updateDaysButtonText();
+    });
+  });
 }); 

@@ -10,6 +10,17 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize schedule display
   updateScheduleDisplay();
 
+  // Check if LeetMode is active when popup opens
+  chrome.runtime.sendMessage({ action: 'getBlockingStatus' }, (response) => {
+    if (response && response.isBlocking) {
+      // Hide the "Go into LeetMode" button if already blocking
+      leetModeButton.style.display = 'none';
+    } else {
+      // Show the button if not blocking
+      leetModeButton.style.display = 'flex';
+    }
+  });
+
   // Add event listeners only if elements exist
   if (scheduleButton) {
     scheduleButton.addEventListener('click', () => {
@@ -28,6 +39,10 @@ document.addEventListener('DOMContentLoaded', function() {
       chrome.runtime.sendMessage({ action: 'stopBlocking' }, () => {
         if (activeSession) {
           activeSession.classList.add('hidden');
+        }
+        // Show the LeetMode button again
+        if (leetModeButton) {
+          leetModeButton.style.display = 'flex';
         }
       });
     });

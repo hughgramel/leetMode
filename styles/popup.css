@@ -1,7 +1,7 @@
 :root {
-  --primary-color: #FFA116;
-  --primary-hover: #FF9000;
-  --text-color: #293145;
+  --primary-color: #4C6FFF;
+  --primary-hover: #3D5CDB;
+  --text-color: #1A1F36;
   --border-radius: 16px;
   --background-color: #F7F9FC;
   --card-background: #FFFFFF;
@@ -42,6 +42,26 @@ h1 {
   font-weight: 600;
   margin: 0;
   color: var(--text-color);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-color);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-color);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  letter-spacing: -0.02em;
 }
 
 .description {
@@ -56,6 +76,8 @@ h1 {
   font-size: 14px;
   line-height: 1.5;
   color: #4E5D78;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+  letter-spacing: -0.01em;
 }
 
 .schedule-display {
@@ -69,7 +91,7 @@ h1 {
 }
 
 .schedule-icon {
-  background: rgba(255, 161, 22, 0.1);
+  background: rgba(76, 111, 255, 0.1);
   width: 40px;
   height: 40px;
   border-radius: 10px;
@@ -112,12 +134,13 @@ h1 {
   gap: 8px;
   transition: all 0.2s;
   margin: 8px 0;
+  letter-spacing: -0.01em;
 }
 
 .primary-button:hover {
   transform: translateY(-1px);
   background: var(--primary-hover);
-  box-shadow: 0 4px 12px rgba(255, 161, 22, 0.2);
+  box-shadow: 0 4px 12px rgba(76, 111, 255, 0.2);
 }
 
 .add-button {
@@ -134,6 +157,7 @@ h1 {
   gap: 8px;
   cursor: pointer;
   transition: all 0.2s;
+  letter-spacing: -0.01em;
 }
 
 .add-button:hover {

@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
   const backButton = document.getElementById('backButton');
   const startButton = document.getElementById('startLeetMode');
-  const hoursInput = document.getElementById('hours');
-  const minutesInput = document.getElementById('minutes');
+  const hourInput = document.querySelector('.time-unit:nth-child(1) input');
+  const minuteInput = document.querySelector('.time-unit:nth-child(2) input');
   const incrementButtons = document.querySelectorAll('.increment');
   const decrementButtons = document.querySelectorAll('.decrement');
 
@@ -10,62 +10,85 @@ document.addEventListener('DOMContentLoaded', function() {
     window.close();
   });
 
-  // Handle increment/decrement buttons
-  incrementButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      const input = button.parentElement.querySelector('input');
-      const max = parseInt(input.getAttribute('max'));
-      const value = parseInt(input.value);
-      input.value = value < max ? value + 1 : value;
-    });
-  });
-
-  decrementButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      const input = button.parentElement.querySelector('input');
-      const min = parseInt(input.getAttribute('min'));
-      const value = parseInt(input.value);
-      input.value = value > min ? value - 1 : value;
-    });
-  });
-
-  // Validate input values
-  [hoursInput, minutesInput].forEach(input => {
-    input.addEventListener('change', () => {
-      const value = parseInt(input.value);
-      const min = parseInt(input.getAttribute('min'));
-      const max = parseInt(input.getAttribute('max'));
+  // Allow typing in inputs
+  [hourInput, minuteInput].forEach(input => {
+    input.addEventListener('input', (e) => {
+      let value = e.target.value;
       
-      if (isNaN(value) || value < min) {
-        input.value = min;
-      } else if (value > max) {
+      // Remove any non-numeric characters
+      value = value.replace(/[^0-9]/g, '');
+      
+      // Convert to number
+      const numValue = parseInt(value, 10);
+      const max = input === hourInput ? 23 : 59;
+      
+      // Handle empty or invalid input
+      if (value === '' || isNaN(numValue)) {
+        input.value = '0';
+      }
+      // Handle numbers exceeding max
+      else if (numValue > max) {
         input.value = max;
+      }
+      // Handle valid numbers, ensuring leading zero for single digits
+      else {
+        input.value = numValue.toString();
+      }
+    });
+
+    // Add leading zero when input loses focus
+    input.addEventListener('blur', (e) => {
+      const value = parseInt(e.target.value, 10);
+      if (!isNaN(value) && value < 10) {
+        e.target.value = value.toString().padStart(2, '0');
       }
     });
   });
 
-  startButton.addEventListener('click', () => {
-    const hours = parseInt(hoursInput.value) || 0;
-    const minutes = parseInt(minutesInput.value) || 0;
-    const totalMinutes = (hours * 60) + minutes;
+  // Update increment/decrement to handle leading zeros
+  incrementButtons.forEach((button, index) => {
+    button.addEventListener('click', () => {
+      const input = index === 0 ? hourInput : minuteInput;
+      const max = index === 0 ? 23 : 59;
+      const currentValue = parseInt(input.value, 10) || 0;
+      const newValue = Math.min(currentValue + 1, max);
+      input.value = newValue.toString().padStart(2, '0');
+    });
+  });
 
+  decrementButtons.forEach((button, index) => {
+    button.addEventListener('click', () => {
+      const input = index === 0 ? hourInput : minuteInput;
+      const currentValue = parseInt(input.value, 10) || 0;
+      const newValue = Math.max(currentValue - 1, 0);
+      input.value = newValue.toString().padStart(2, '0');
+    });
+  });
+
+  startButton.addEventListener('click', () => {
+    const hours = parseInt(hourInput.value);
+    const minutes = parseInt(minuteInput.value);
+    const totalMinutes = hours * 60 + minutes;
     if (totalMinutes > 0) {
-      // Add loading animation
-      startButton.classList.add('loading');
-      startButton.disabled = true;
-      
-      chrome.runtime.sendMessage({
-        action: 'startBlocking',
-        duration: totalMinutes
-      }, () => {
-        // Wait for animation
-        setTimeout(() => {
-          // Close the timer page and redirect to LeetCode
-          chrome.tabs.create({ url: 'https://leetcode.com' }, () => {
-            window.close();
-          });
-        }, 1000);
-      });
+      startTimer(totalMinutes);
+    } else {
+      alert('Please set a valid duration.');
     }
   });
-}); 
+
+  function startTimer(duration) {
+    // Add loading animation
+    startButton.classList.add('loading');
+    startButton.disabled = true;
+    
+    chrome.runtime.sendMessage({
+      action: 'startBlocking',
+      duration: duration
+    }, () => {
+      // Immediately redirect to LeetCode and close
+      chrome.tabs.create({ url: 'https://leetcode.com' }, () => {
+        window.close();
+      });
+    });
+  }
+});

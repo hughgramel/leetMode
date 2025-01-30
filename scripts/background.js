@@ -17,6 +17,11 @@ function isLeetCodeUrl(url) {
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'getBlockingStatus') {
+    // Return whether blocking is currently active
+    sendResponse({ isBlocking: !!endTime });
+    return true;
+  }
   switch (request.action) {
     case 'startBlocking':
       activeBlock = true;

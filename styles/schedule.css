@@ -216,17 +216,16 @@ h1 {
 .time-range {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   padding: 8px 0;
 }
 
 .time-input {
-  width: 80px;
-  padding: 8px 12px;
-  border: 2px solid #E5E9F2;
-  border-radius: 8px;
-  font-size: 16px;
-  font-family: var(--font-family);
+  width: 70px;
+  padding: 8px;
+  border: 1px solid #E5E9F2;
+  border-radius: 6px;
+  font-size: 14px;
   text-align: center;
 }
 
@@ -241,19 +240,6 @@ h1 {
   color: #FF3B30;
   cursor: pointer;
   padding: 4px;
-}
-
-.add-time-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: none;
-  border: none;
-  color: var(--primary-color);
-  cursor: pointer;
-  padding: 8px;
-  margin-top: 12px;
-  font-size: 14px;
 }
 
 .modal-footer {
@@ -373,19 +359,23 @@ h1 {
 }
 
 .toggle-ampm {
-  height: 40px;
-  padding: 0 16px;
-  border: 1px solid var(--primary-color);
-  border-radius: 8px;
+  padding: 4px 8px;
+  border: 1px solid #E5E9F2;
+  border-radius: 6px;
   background: white;
-  color: var(--primary-color);
-  font-weight: 500;
+  color: var(--text-color);
   cursor: pointer;
+  font-size: 14px;
   transition: all 0.2s;
+  user-select: none; /* Prevent text selection */
 }
 
 .toggle-ampm:hover {
-  background: rgba(0, 122, 255, 0.1);
+  background: var(--background-color);
+}
+
+.toggle-ampm:active {
+  background: #E5E9F2;
 }
 
 .toggle-ampm.active {
@@ -466,4 +456,19 @@ h1 {
   font-size: 18px;
   font-weight: 500;
   color: var(--text-color);
+}
+
+.day-separator {
+  height: 1px;
+  background: #E5E9F2;
+  margin: 8px 0;
+}
+
+.day-option:first-child {
+  margin-bottom: 8px;
+}
+
+/* Hide remove button for the first time range */
+.time-ranges .time-range:first-child .remove-time {
+  display: none;
 } 
