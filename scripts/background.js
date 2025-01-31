@@ -23,7 +23,7 @@ chrome.webNavigation.onBeforeNavigate.addListener((details) => {
 
 // Helper function to check if URL is LeetCode
 function isLeetCodeUrl(url) {
-  return (url.includes('leetcode.com') || url.includes('trydeepwork.com'));
+  return url.includes('leetcode.com');
 }
 
 // Listen for messages from popup
