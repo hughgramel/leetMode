@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   let currentSchedules = [];
   
-  // Initialize days dropdown
   const days = [
     { id: 'monday', label: 'Monday' },
     { id: 'tuesday', label: 'Tuesday' },
@@ -28,10 +27,8 @@ document.addEventListener('DOMContentLoaded', function() {
     { id: 'sunday', label: 'Sunday' }
   ];
 
-  // Clear any existing day options
   daysDropdown.innerHTML = '';
 
-  // Create day options
   days.forEach(day => {
     const dayOption = document.createElement('div');
     dayOption.className = 'day-option';
@@ -42,30 +39,25 @@ document.addEventListener('DOMContentLoaded', function() {
     daysDropdown.appendChild(dayOption);
   });
 
-  // Load and display existing schedules
   loadSchedules();
 
-  // Event Listeners
   backButton.addEventListener('click', () => window.close());
   addScheduleButton.addEventListener('click', showModal);
   closeButton.addEventListener('click', hideModal);
   cancelButton.addEventListener('click', hideModal);
   saveButton.addEventListener('click', saveSchedule);
 
-  // Toggle days dropdown
   daysButton.addEventListener('click', (e) => {
     e.stopPropagation();
     daysDropdown.classList.toggle('hidden');
   });
 
-  // Close dropdown when clicking outside
   document.addEventListener('click', (e) => {
     if (!daysButton.contains(e.target) && !daysDropdown.contains(e.target)) {
       daysDropdown.classList.add('hidden');
     }
   });
 
-  // Time type radio buttons
   document.querySelectorAll('input[name="timeType"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
       timeRanges.classList.toggle('hidden', e.target.value === 'allDay');
@@ -73,16 +65,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // Functions
   function showModal() {
     scheduleModal.classList.remove('hidden');
     resetModal();
     
-    // Set up time range listeners for the default time range
-    const timeRange = document.querySelector('.time-range');
-    if (timeRange) {
+    // Get all time ranges and set up listeners for each
+    const timeRanges = document.querySelectorAll('.time-range');
+    timeRanges.forEach(timeRange => {
       setupTimeRangeListeners(timeRange);
-    }
+    });
   }
 
   function hideModal() {
@@ -94,7 +85,6 @@ document.addEventListener('DOMContentLoaded', function() {
     scheduleName.value = '';
     document.querySelectorAll('.day-option input').forEach(checkbox => checkbox.checked = false);
     
-    // Reset time range
     const timeRange = timeRanges.querySelector('.time-range');
     if (timeRange) {
       timeRange.querySelectorAll('select').forEach(select => {
@@ -114,28 +104,26 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function setupTimeRangeListeners(timeRange) {
-    // AM/PM toggle - direct click handler
-    timeRange.querySelectorAll('.toggle-ampm').forEach(button => {
-      button.addEventListener('click', function(e) {
+    // Remove any existing listeners first
+    const toggleButtons = timeRange.querySelectorAll('.toggle-ampm');
+    toggleButtons.forEach(button => {
+      const newButton = button.cloneNode(true);
+      button.parentNode.replaceChild(newButton, button);
+      
+      newButton.addEventListener('click', function(e) {
         e.preventDefault();
         e.stopPropagation();
-        if (this.textContent.trim() === 'AM') {
-          this.textContent = 'PM';
-          this.dataset.period = 'PM';
-        } else {
-          this.textContent = 'AM';
-          this.dataset.period = 'AM';
-        }
+        const newPeriod = this.dataset.period === 'AM' ? 'PM' : 'AM';
+        this.textContent = newPeriod;
+        this.dataset.period = newPeriod;
         validateTimeRange(timeRange);
       });
     });
 
-    // Validate on select change
     timeRange.querySelectorAll('select').forEach(select => {
       select.addEventListener('change', () => validateTimeRange(timeRange));
     });
 
-    // Remove button - only show for additional ranges
     const removeButton = timeRange.querySelector('.remove-time');
     if (removeButton && timeRange === timeRange.parentElement.firstElementChild) {
       removeButton.style.display = 'none';
@@ -151,7 +139,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const [startAmPm, endAmPm] = timeRange.querySelectorAll('.toggle-ampm');
     
     if (startHour.value && startMinute.value && endHour.value && endMinute.value) {
-      // Check if times are identical
       if (startHour.value === endHour.value && 
           startMinute.value === endMinute.value && 
           startAmPm.dataset.period === endAmPm.dataset.period) {
@@ -197,10 +184,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (selectedDays.length === 0) {
       buttonText.textContent = 'Select days';
     } else if (selectedDays.length === 1) {
-      // Show full day name for single selection
       buttonText.textContent = selectedDays[0].charAt(0).toUpperCase() + selectedDays[0].slice(1);
     } else {
-      // Show abbreviated names for multiple selections
       const dayAbbrev = selectedDays.map(day => {
         const firstChar = day.charAt(0).toUpperCase();
         const restChars = day.slice(1, 3);
@@ -257,13 +242,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const [startHour, startMinute, endHour, endMinute] = range.querySelectorAll('select');
         const [startAmPm, endAmPm] = range.querySelectorAll('.toggle-ampm');
         
+        const startHour24 = convertTo24Hour(parseInt(startHour.value), startAmPm.dataset.period);
+        const endHour24 = convertTo24Hour(parseInt(endHour.value), endAmPm.dataset.period);
+        
         return {
           start: {
-            time: `${startHour.value}:${startMinute.value}`,
+            time: `${startHour24.toString().padStart(2, '0')}:${startMinute.value}`,
             period: startAmPm.dataset.period
           },
           end: {
-            time: `${endHour.value}:${endMinute.value}`,
+            time: `${endHour24.toString().padStart(2, '0')}:${endMinute.value}`,
             period: endAmPm.dataset.period
           }
         };
@@ -283,9 +271,32 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     currentSchedules.push(newSchedule);
+    
+    const card = createScheduleCard(newSchedule);
+    schedulesList.appendChild(card);
+    
     saveSchedulesToStorage();
-    renderSchedules();
+    
     hideModal();
+    
+    const message = document.createElement('div');
+    message.className = 'save-message';
+    message.textContent = 'Schedule saved!';
+    document.body.appendChild(message);
+    
+    setTimeout(() => {
+      message.remove();
+    }, 2000);
+  }
+
+  function convertTo24Hour(hour, period) {
+    if (period === 'PM' && hour !== 12) {
+      return hour + 12;
+    }
+    if (period === 'AM' && hour === 12) {
+      return 0;
+    }
+    return hour;
   }
 
   function loadSchedules() {
@@ -336,31 +347,74 @@ document.addEventListener('DOMContentLoaded', function() {
   function formatScheduleTime(schedule) {
     const days = schedule.days.map(day => day.charAt(0).toUpperCase() + day.slice(1, 3)).join(', ');
     const times = schedule.times.map(time => {
-      const startTime = `${formatTime(time.start.time)} ${time.start.period}`;
-      const endTime = `${formatTime(time.end.time)} ${time.end.period}`;
+      const [startHour24, startMinutes] = time.start.time.split(':').map(Number);
+      const [endHour24, endMinutes] = time.end.time.split(':').map(Number);
+      
+      const startHour12 = startHour24 > 12 ? startHour24 - 12 : (startHour24 === 0 ? 12 : startHour24);
+      const endHour12 = endHour24 > 12 ? endHour24 - 12 : (endHour24 === 0 ? 12 : endHour24);
+      
+      const startPeriod = startHour24 >= 12 ? 'PM' : 'AM';
+      const endPeriod = endHour24 >= 12 ? 'PM' : 'AM';
+      
+      const startTime = `${startHour12}:${startMinutes.toString().padStart(2, '0')} ${startPeriod}`;
+      const endTime = `${endHour12}:${endMinutes.toString().padStart(2, '0')} ${endPeriod}`;
+      
       return `${startTime} - ${endTime}`;
     }).join(', ');
     return `${days} - ${times}`;
   }
 
+  function formatHour(hour) {
+    hour = parseInt(hour);
+    if (hour === 0) return '12';
+    if (hour > 12) return (hour - 12).toString();
+    return hour.toString();
+  }
+
   function deleteSchedule(id) {
     if (confirm('Are you sure you want to delete this schedule?')) {
+      const scheduleToDelete = currentSchedules.find(s => s.id === id);
+      if (scheduleToDelete) {
+        const now = new Date();
+        const currentDay = now.getDay();
+        const currentTime = now.getHours() * 60 + now.getMinutes();
+        
+        const dayMap = {
+          'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+          'thursday': 4, 'friday': 5, 'saturday': 6
+        };
+        
+        // Check if this schedule is currently active
+        const isCurrentlyActive = scheduleToDelete.days.some(day => {
+          if (dayMap[day] === currentDay) {
+            return scheduleToDelete.times.some(time => {
+              const startMinutes = convertToMinutes(time.start.time, time.start.period);
+              const endMinutes = convertToMinutes(time.end.time, time.end.period);
+              return currentTime >= startMinutes && currentTime < endMinutes;
+            });
+          }
+          return false;
+        });
+        
+        // If this schedule is currently active, stop blocking
+        if (isCurrentlyActive) {
+          chrome.runtime.sendMessage({ action: 'stopBlocking' });
+        }
+      }
+      
       currentSchedules = currentSchedules.filter(s => s.id !== id);
       saveSchedulesToStorage();
       renderSchedules();
     }
   }
 
-  // Event listeners for dynamic updates
   document.querySelectorAll('.day-option input').forEach(checkbox => {
     checkbox.addEventListener('change', updateDaysButtonText);
   });
 
-  // Update schedule name input
   const scheduleNameInput = document.getElementById('scheduleName');
-  scheduleNameInput.maxLength = 30; // Set max length
+  scheduleNameInput.maxLength = 30;
 
-  // Remove all day option and simplify time selection
   document.querySelectorAll('.time-option').forEach(option => option.remove());
   timeRanges.classList.remove('hidden');
 }); 

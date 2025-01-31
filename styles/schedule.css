@@ -198,12 +198,28 @@ h1 {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.day-option,
-.time-option {
+.day-option {
+  padding: 8px 12px;
   display: flex;
   align-items: center;
-  padding: 8px;
   gap: 8px;
+}
+
+.day-option:not(:last-child) {
+  margin-bottom: 4px;
+}
+
+.day-option input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--primary-color);
+}
+
+.day-option label {
+  font-size: 14px;
+  color: var(--text-color);
+  cursor: pointer;
 }
 
 .time-ranges {

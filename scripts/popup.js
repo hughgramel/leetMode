@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const leetModeButton = document.getElementById('leetModeButton');
   const activeSession = document.getElementById('activeSession');
   const timeRemaining = document.getElementById('timeRemaining');
-  const stopBlockingButton = document.getElementById('stopBlocking');
   const scheduleDisplay = document.getElementById('scheduleDisplay');
 
   // Initialize schedule display
@@ -34,20 +33,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  if (stopBlockingButton) {
-    stopBlockingButton.addEventListener('click', () => {
-      chrome.runtime.sendMessage({ action: 'stopBlocking' }, () => {
-        if (activeSession) {
-          activeSession.classList.add('hidden');
-        }
-        // Show the LeetMode button again
-        if (leetModeButton) {
-          leetModeButton.style.display = 'flex';
-        }
-      });
-    });
-  }
-
   // Check blocking status if elements exist
   if (activeSession && timeRemaining) {
     checkBlockingStatus();
@@ -64,7 +49,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (nextSession) {
           scheduleDisplay.classList.remove('hidden');
           scheduleDisplay.innerHTML = formatNextSession(nextSession);
+        } else {
+          scheduleDisplay.classList.add('hidden');
         }
+      } else {
+        scheduleDisplay.classList.add('hidden');
       }
     });
   }
@@ -119,14 +108,39 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function formatNextSession(session) {
-    const day = session.nextDay.charAt(0).toUpperCase() + session.nextDay.slice(1);
+    const now = new Date();
+    const currentDay = now.getDay();
+    const dayMap = {
+      'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+      'thursday': 4, 'friday': 5, 'saturday': 6
+    };
+    const sessionDay = dayMap[session.nextDay];
+    
+    // Format the day name
+    let dayDisplay;
+    if (sessionDay === currentDay) {
+      dayDisplay = 'Today';
+    } else if (sessionDay === (currentDay + 1) % 7) {
+      dayDisplay = 'Tomorrow';
+    } else {
+      dayDisplay = session.nextDay.charAt(0).toUpperCase() + session.nextDay.slice(1);
+    }
+    
+    // Convert time from 24h to 12h format
+    const [hours, minutes] = session.startTime.time.split(':').map(Number);
+    let displayHours = hours;
+    if (hours > 12) displayHours = hours - 12;
+    if (hours === 0) displayHours = 12;
+    
+    const formattedTime = `${displayHours}:${minutes.toString().padStart(2, '0')} ${session.startTime.period}`;
+    
     return `
       <div class="next-session">
         <span class="material-icons">event_next</span>
         <div>
           <div>Next session:</div>
           <div class="session-time">
-            ${day} at ${session.startTime.time} ${session.startTime.period}
+            ${dayDisplay} at ${formattedTime}
           </div>
         </div>
       </div>
@@ -137,10 +151,12 @@ document.addEventListener('DOMContentLoaded', function() {
     chrome.runtime.sendMessage({ action: 'getStatus' }, (response) => {
       if (response && response.active && response.endTime) {
         activeSession.classList.remove('hidden');
+        scheduleDisplay.classList.add('hidden'); // Hide next session display during active session
         updateTimeRemaining(response.endTime);
         startTimer(response.endTime);
       } else {
         activeSession.classList.add('hidden');
+        updateNextSession(); // Show next session when no active session
       }
     });
   }
@@ -148,9 +164,15 @@ document.addEventListener('DOMContentLoaded', function() {
   function updateTimeRemaining(endTime) {
     if (!timeRemaining) return;
     const remaining = Math.max(0, endTime - Date.now());
-    const minutes = Math.floor(remaining / (60 * 1000));
+    const hours = Math.floor(remaining / (60 * 60 * 1000));
+    const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
     const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
-    timeRemaining.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    if (hours > 0) {
+      timeRemaining.textContent = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    } else {
+      timeRemaining.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
   }
 
   function startTimer(endTime) {
@@ -164,5 +186,51 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       updateTimeRemaining(endTime);
     }, 1000);
+  }
+
+  // Add helper function to format ongoing session
+  function formatOngoingSession(startTime, endTime) {
+    // Format the start time
+    const [startHours, startMinutes] = startTime.time.split(':').map(Number);
+    let displayStartHours = startHours;
+    if (startHours > 12) displayStartHours = startHours - 12;
+    if (startHours === 0) displayStartHours = 12;
+    
+    // Format the end time
+    const [endHours, endMinutes] = endTime.time.split(':').map(Number);
+    let displayEndHours = endHours;
+    if (endHours > 12) displayEndHours = endHours - 12;
+    if (endHours === 0) displayEndHours = 12;
+    
+    const formattedStartTime = `${displayStartHours}:${startMinutes.toString().padStart(2, '0')} ${startTime.period}`;
+    const formattedEndTime = `${displayEndHours}:${endMinutes.toString().padStart(2, '0')} ${endTime.period}`;
+
+    return `
+      <div class="next-session">
+        <span class="material-icons">timer</span>
+        <div>
+          <div>Ongoing session:</div>
+          <div class="session-time">
+            ${formattedStartTime} - ${formattedEndTime}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Add helper function to format time
+  function formatTime(date) {
+    if (!(date instanceof Date) || isNaN(date)) {
+        return '--:--';
+    }
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const period = hours >= 12 ? 'PM' : 'AM';
+    
+    // Convert to 12-hour format
+    if (hours > 12) hours -= 12;
+    if (hours === 0) hours = 12;
+    
+    return `${hours}:${minutes.toString().padStart(2, '0')} ${period}`;
   }
 }); 

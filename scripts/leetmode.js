@@ -85,10 +85,9 @@ document.addEventListener('DOMContentLoaded', function() {
       action: 'startBlocking',
       duration: duration
     }, () => {
-      // Immediately redirect to LeetCode and close
-      chrome.tabs.create({ url: 'https://leetcode.com' }, () => {
-        window.close();
-      });
+      // Open a new LeetCode tab and close the popup
+      chrome.tabs.create({ url: 'https://leetcode.com' });
+      window.close();
     });
   }
 });
