@@ -3,8 +3,35 @@ let endTime = null;
 let scheduledChecks;
 let blockEndTimer = null;
 
+// Initialize blocking state from storage on startup
+chrome.storage.local.get(['activeBlock', 'endTime'], (result) => {
+  if (result.activeBlock && result.endTime) {
+    const now = Date.now();
+    if (now < result.endTime) {
+      // Blocking session is still active
+      activeBlock = true;
+      endTime = result.endTime;
+      const remainingTime = Math.ceil((endTime - now) / (60 * 1000));
+      scheduleBlockEnd(remainingTime);
+      console.log('Restored active blocking session, remaining time:', remainingTime, 'minutes');
+    } else {
+      // Blocking session has expired, clean up
+      chrome.storage.local.remove(['activeBlock', 'endTime']);
+      console.log('Expired blocking session cleaned up');
+    }
+  }
+});
+
 // Listen for navigation events
 chrome.webNavigation.onBeforeNavigate.addListener((details) => {
+  console.log('Navigation detected:', {
+    url: details.url,
+    activeBlock: activeBlock,
+    frameId: details.frameId,
+    transitionType: details.transitionType,
+    transitionQualifiers: details.transitionQualifiers
+  });
+  
   // Only redirect if:
   // 1. Blocking is active
   // 2. It's not a LeetCode URL
@@ -13,8 +40,8 @@ chrome.webNavigation.onBeforeNavigate.addListener((details) => {
   if (activeBlock && 
       !isLeetCodeUrl(details.url) && 
       details.frameId === 0 && 
-      details.transitionType !== 'reload' && 
-      details.transitionQualifiers.length === 0) {
+      details.transitionType !== 'reload') {
+    console.log('Redirecting to LeetCode:', details.url);
     chrome.tabs.update(details.tabId, {
       url: 'https://leetcode.com'
     });
@@ -35,9 +62,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   switch (request.action) {
     case 'startBlocking':
+      console.log('Starting blocking for', request.duration, 'minutes');
       activeBlock = true;
       endTime = Date.now() + (request.duration * 60 * 1000);
+      
+      // Persist state to storage
+      chrome.storage.local.set({
+        activeBlock: true,
+        endTime: endTime
+      });
+      
       scheduleBlockEnd(request.duration);
+      
+      console.log('Blocking state set:', { activeBlock, endTime });
       
       // Show notification
       chrome.notifications.create({
@@ -51,12 +88,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
     
     case 'stopBlocking':
+      console.log('Stopping blocking');
       activeBlock = false;
       endTime = null;
       if (blockEndTimer) {
         clearTimeout(blockEndTimer);
         blockEndTimer = null;
       }
+      
+      // Clear state from storage
+      chrome.storage.local.remove(['activeBlock', 'endTime']);
+      
+      console.log('Blocking state cleared:', { activeBlock, endTime });
       sendResponse({ success: true });
       break;
     
@@ -112,6 +155,9 @@ function scheduleBlockEnd(duration) {
     activeBlock = false;
     endTime = null;
     blockEndTimer = null;
+    
+    // Clear state from storage
+    chrome.storage.local.remove(['activeBlock', 'endTime']);
     
     // Notify that blocking has ended
     chrome.notifications.create({
@@ -193,6 +239,12 @@ function startScheduledBlock(duration, scheduledStart, scheduledEnd) {
   // Set blocking state
   activeBlock = true;
   endTime = Date.now() + (duration * 60 * 1000);
+  
+  // Persist state to storage
+  chrome.storage.local.set({
+    activeBlock: true,
+    endTime: endTime
+  });
 
   // Send message to popup to update UI with scheduled times
   chrome.runtime.sendMessage({

@@ -398,13 +398,27 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // If this schedule is currently active, stop blocking
         if (isCurrentlyActive) {
-          chrome.runtime.sendMessage({ action: 'stopBlocking' });
+          chrome.runtime.sendMessage({ action: 'stopBlocking' }, (response) => {
+            if (response && response.success) {
+              console.log('Stopped blocking due to schedule deletion');
+            }
+          });
         }
       }
       
       currentSchedules = currentSchedules.filter(s => s.id !== id);
       saveSchedulesToStorage();
       renderSchedules();
+      
+      // Show confirmation message
+      const message = document.createElement('div');
+      message.className = 'save-message';
+      message.textContent = 'Schedule deleted successfully!';
+      document.body.appendChild(message);
+      
+      setTimeout(() => {
+        message.remove();
+      }, 2000);
     }
   }
 

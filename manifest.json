@@ -9,7 +9,8 @@
     "webNavigation",
     "webRequest",
     "declarativeNetRequest",
-    "alarms"
+    "alarms",
+    "notifications"
   ],
   "host_permissions": [
     "<all_urls>"
